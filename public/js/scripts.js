@@ -6,7 +6,27 @@ function renderChoroplethMap(eduData, geoData) {
   const height = 800;
   const margin = { top: 40, right: 20, bottom: 80, left: 80 };
 
-  const keyArr = [{ rate: 0, colour: '#FFFFFF' }, { rate: 20, colour: '#C4D5BF' }, { rate: 40, colour: '#8AAB7F' }, { rate: 60, colour: '#50813F' }, { rate: 80, colour: '#165700' }];
+  function countyColour(num) {
+    let colour;
+
+    const keyArr = [
+      { rateLower: 0, rateHigher: 19, colour: '#DEFFD6' },
+      { rateLower: 20, rateHigher: 39, colour: '#B0E6A0' },
+      { rateLower: 40, rateHigher: 59, colour: '#83CE6B' },
+      { rateLower: 60, rateHigher: 79, colour: '#55B635' },
+      { rateLower: 80, rateHigher: 100, colour: '#289E00' }
+    ];
+
+    keyArr.forEach((key) => {
+      if (num >= key.rateLower && num <= key.rateHigher) {
+        colour = key.colour;
+      }
+    });
+
+    return colour;
+  }
+
+  console.log(countyColour(10))
 
   // append svg to DOM
   const svg = d3.select('.svg-container')
@@ -21,6 +41,8 @@ function renderChoroplethMap(eduData, geoData) {
     .enter()
     .append('path')
     .attr('class', 'county')
+    .attr('stroke', 'black')
+    .attr('stroke-width', '0.1')
     .attr('data-fips', (d) => d.id)
     .attr('data-education', (d) => {
       let bachelorsOrHigher;
@@ -30,10 +52,38 @@ function renderChoroplethMap(eduData, geoData) {
           bachelorsOrHigher = county.bachelorsOrHigher;
         }
       });
+
       return (!bachelorsOrHigher) ? 'No educational data available' : bachelorsOrHigher;
     })
-    .style('fill', 'green')
+    .style('fill', (d) => {
+      let bachelorsOrHigher;
+
+      eduData.forEach((county) => {
+        if (d.id === county.fips) {
+          bachelorsOrHigher = county.bachelorsOrHigher;
+        }
+      });
+
+      return (!bachelorsOrHigher) ? '#FFFFFF' : countyColour(bachelorsOrHigher);
+    })
     .attr('d', d3.geoPath())
+    .on('mouseover', (d) => {
+      // show tooltip when user hovers over bar and dynamically allocate attributes
+      tooltip
+        .style('left', 400)
+        .style('top', 100)
+        .html(
+          ``
+        )
+        .transition()
+        .duration(200)
+        .style('opacity', .9)
+    })
+    .on("mouseout", (d) => {
+      tooltip.transition()
+        .duration(500)
+        .style("opacity", 0)
+    })
 
   // append state lines to svg
 
