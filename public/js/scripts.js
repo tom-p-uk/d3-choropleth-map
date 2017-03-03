@@ -3,22 +3,26 @@ function renderChoroplethMap(eduData, geoData) {
   console.log(geoData);
 
   const width = 1000;
-  const height = 800;
-  const margin = { top: 40, right: 20, bottom: 80, left: 80 };
+  const height = 700;
+  const margin = { top: 40, right: 20, bottom: 20, left: 20 };
+  const legendHeight = 20;
+  const legendWidth = 50;
+  const legendX = 550;
+  const legendTextX = legendX + legendWidth / 2;
 
+  const keyArr = [
+    { rateLower: 0, rateHigher: 20, colour: '#9EB5FF' },
+    { rateLower: 20, rateHigher: 40, colour: '#7689F2' },
+    { rateLower: 40, rateHigher: 60, colour: '#4F5EE5' },
+    { rateLower: 60, rateHigher: 80, colour: '#2732D8' },
+    { rateLower: 80, rateHigher: 100, colour: '#0007CC' }
+  ];
   function countyColour(num) {
     let colour;
 
-    const keyArr = [
-      { rateLower: 0, rateHigher: 19, colour: '#DEFFD6' },
-      { rateLower: 20, rateHigher: 39, colour: '#B0E6A0' },
-      { rateLower: 40, rateHigher: 59, colour: '#83CE6B' },
-      { rateLower: 60, rateHigher: 79, colour: '#55B635' },
-      { rateLower: 80, rateHigher: 100, colour: '#289E00' }
-    ];
 
     keyArr.forEach((key) => {
-      if (num >= key.rateLower && num <= key.rateHigher) {
+      if (num >= key.rateLower && num < key.rateHigher) {
         colour = key.colour;
       }
     });
@@ -26,7 +30,11 @@ function renderChoroplethMap(eduData, geoData) {
     return colour;
   }
 
-  console.log(countyColour(10))
+  // set up tooltip div
+  const tooltip = d3.select('body').append('div')
+    .attr('id', 'tooltip')
+    .style('position', 'absolute')
+    .style('opacity', 0)
 
   // append svg to DOM
   const svg = d3.select('.svg-container')
@@ -44,36 +52,37 @@ function renderChoroplethMap(eduData, geoData) {
     .attr('stroke', 'black')
     .attr('stroke-width', '0.1')
     .attr('data-fips', (d) => d.id)
-    .attr('data-education', (d) => {
+    .attr('data-education', function(d) {
+      // iterate through eduData, return appropriate data-education value and set location attr
       let bachelorsOrHigher;
 
       eduData.forEach((county) => {
         if (d.id === county.fips) {
+          d3.select(this).attr('location', `${county.area_name}, ${county.state}`)
           bachelorsOrHigher = county.bachelorsOrHigher;
         }
       });
 
-      return (!bachelorsOrHigher) ? 'No educational data available' : bachelorsOrHigher;
+      return bachelorsOrHigher ? bachelorsOrHigher : -1;
     })
-    .style('fill', (d) => {
-      let bachelorsOrHigher;
+    .style('fill', function(d) {
+      const bachelorsOrHigher = d3.select(this).attr('data-education')
 
-      eduData.forEach((county) => {
-        if (d.id === county.fips) {
-          bachelorsOrHigher = county.bachelorsOrHigher;
-        }
-      });
-
-      return (!bachelorsOrHigher) ? '#FFFFFF' : countyColour(bachelorsOrHigher);
+      return countyColour(bachelorsOrHigher);
     })
     .attr('d', d3.geoPath())
-    .on('mouseover', (d) => {
+    .on('mouseover', function(d) {
+      const mouse = d3.mouse(this);
+      const location = d3.select(this).attr('location');
+      const bachelorsOrHigher = d3.select(this).attr('data-education');
       // show tooltip when user hovers over bar and dynamically allocate attributes
       tooltip
-        .style('left', 400)
-        .style('top', 100)
+        .style('left', `${mouse[0] + 170}px`)
+        .style('top', `${mouse[1] - 70}px`)
+        .attr('data-education', bachelorsOrHigher)
         .html(
-          ``
+          `<span class="tooltip-title">Location: </span>${location}<br>
+          <span class="tooltip-title">Population with Bachelors or Higher: </span>${bachelorsOrHigher}%`
         )
         .transition()
         .duration(200)
@@ -85,8 +94,31 @@ function renderChoroplethMap(eduData, geoData) {
         .style("opacity", 0)
     })
 
-  // append state lines to svg
+  // set up legend
+  const legend = svg.selectAll('rect')
+    .data(keyArr)
+    .enter()
+    .append('g')
+    .attr('id', 'legend')
+    .append('rect')
+    .attr('x', (d, i) => legendWidth * i + legendX)
+    .attr('y', height - margin.bottom - margin.top)
+    .attr('width', legendWidth)
+    .attr('height', legendHeight)
+    .style('fill', (d) => countyColour(d.rateLower))
+    .attr('stroke', 'black')
+    .attr('stroke-width', 0.3)
 
+  const legendText = svg.selectAll('text')
+  .data(keyArr)
+    .enter()
+    .append('text')
+    .attr("class", "mono")
+    .text((d) => `${d.rateLower}-${d.rateHigher}%`)
+    .attr("x", (d, i) => legendWidth * i + legendTextX)
+    .attr('y', height - margin.bottom - margin.top + legendHeight + legendHeight / 2)
+    .style('text-anchor', 'middle')
+    .style('font-size', '10px')
 
 
 }
