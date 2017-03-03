@@ -54,6 +54,7 @@ function renderChoroplethMap(eduData, geoData) {
     .attr('stroke-width', '0.1')
     .attr('data-fips', (d) => d.id)
     .attr('data-education', function(d) {
+      
       // iterate through eduData, return appropriate data-education value and set location attr
       let bachelorsOrHigher;
 
