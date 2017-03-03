@@ -1,29 +1,30 @@
 function renderChoroplethMap(eduData, geoData) {
-  console.log(eduData);
-  console.log(geoData);
 
+  // set up required dimensions
   const width = 1000;
   const height = 700;
-  const margin = { top: 40, right: 20, bottom: 20, left: 20 };
-  const legendHeight = 20;
-  const legendWidth = 50;
+  const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+  const legendRectHeight = 20;
+  const legendRectWidth = 50;
   const legendX = 550;
-  const legendTextX = legendX + legendWidth / 2;
+  const legendTextX = legendX + legendRectWidth / 2;
 
-  const keyArr = [
+  // set up legend colour ranges
+  const legendArr = [
     { rateLower: 0, rateHigher: 20, colour: '#9EB5FF' },
     { rateLower: 20, rateHigher: 40, colour: '#7689F2' },
     { rateLower: 40, rateHigher: 60, colour: '#4F5EE5' },
     { rateLower: 60, rateHigher: 80, colour: '#2732D8' },
     { rateLower: 80, rateHigher: 100, colour: '#0007CC' }
   ];
+
+  // function that returns colour after inputting number
   function countyColour(num) {
     let colour;
 
-
-    keyArr.forEach((key) => {
-      if (num >= key.rateLower && num < key.rateHigher) {
-        colour = key.colour;
+    legendArr.forEach((obj) => {
+      if (num >= obj.rateLower && num < obj.rateHigher) {
+        colour = obj.colour;
       }
     });
 
@@ -77,50 +78,48 @@ function renderChoroplethMap(eduData, geoData) {
       const bachelorsOrHigher = d3.select(this).attr('data-education');
       // show tooltip when user hovers over bar and dynamically allocate attributes
       tooltip
-        .style('left', `${mouse[0] + 170}px`)
+        .style('left', `${mouse[0] + 165}px`)
         .style('top', `${mouse[1] - 70}px`)
         .attr('data-education', bachelorsOrHigher)
         .html(
           `<span class="tooltip-title">Location: </span>${location}<br>
-          <span class="tooltip-title">Population with Bachelors or Higher: </span>${bachelorsOrHigher}%`
+          <span class="tooltip-title">Population with Bachelor's or Higher: </span>${bachelorsOrHigher}%`
         )
         .transition()
         .duration(200)
         .style('opacity', .9)
     })
-    .on("mouseout", (d) => {
+    .on('mouseout', (d) => {
       tooltip.transition()
         .duration(500)
-        .style("opacity", 0)
+        .style('opacity', 0)
     })
 
   // set up legend
   const legend = svg.selectAll('rect')
-    .data(keyArr)
+    .data(legendArr)
     .enter()
     .append('g')
     .attr('id', 'legend')
     .append('rect')
-    .attr('x', (d, i) => legendWidth * i + legendX)
+    .attr('x', (d, i) => legendRectWidth * i + legendX)
     .attr('y', height - margin.bottom - margin.top)
-    .attr('width', legendWidth)
-    .attr('height', legendHeight)
+    .attr('width', legendRectWidth)
+    .attr('height', legendRectHeight)
     .style('fill', (d) => countyColour(d.rateLower))
     .attr('stroke', 'black')
     .attr('stroke-width', 0.3)
 
+  // add legend labels
   const legendText = svg.selectAll('text')
-  .data(keyArr)
+  .data(legendArr)
     .enter()
     .append('text')
-    .attr("class", "mono")
     .text((d) => `${d.rateLower}-${d.rateHigher}%`)
-    .attr("x", (d, i) => legendWidth * i + legendTextX)
-    .attr('y', height - margin.bottom - margin.top + legendHeight + legendHeight / 2)
+    .attr('x', (d, i) => legendRectWidth * i + legendTextX)
+    .attr('y', height - margin.bottom - margin.top + legendRectHeight + legendRectHeight / 2)
     .style('text-anchor', 'middle')
     .style('font-size', '10px')
-
-
 }
 
 const eduUrl = 'https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/for_user_education.json';
